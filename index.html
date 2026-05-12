@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shadow Player</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── TOKENS ──────────────────────────────────────── */
+:root,[data-theme="light"]{
+  --color-bg:#f7f6f2;--color-surface:#f9f8f5;--color-surface-2:#fbfbf9;
+  --color-surface-offset:#f3f0ec;--color-surface-dynamic:#e6e4df;
+  --color-border:#d4d1ca;--color-divider:#dcd9d5;
+  --color-text:#28251d;--color-text-muted:#7a7974;--color-text-faint:#bab9b4;
+  --color-primary:#01696f;--color-primary-hover:#0c4e54;--color-primary-active:#0f3638;
+  --color-primary-highlight:#cedcd8;
+  --color-success:#437a22;--color-success-hl:color-mix(in oklch,#437a22 14%,transparent);
+  --color-error:#a12c7b;
+  --color-warning:#964219;--color-warning-hl:color-mix(in oklch,#964219 14%,transparent);
+  --radius-sm:.375rem;--radius-md:.5rem;--radius-lg:.75rem;--radius-xl:1rem;--radius-full:9999px;
+  --shadow-sm:0 1px 2px oklch(0.2 0.01 80/.06);--shadow-md:0 4px 12px oklch(0.2 0.01 80/.08);
+  --shadow-lg:0 12px 32px oklch(0.2 0.01 80/.12);
+  --transition:180ms cubic-bezier(.16,1,.3,1);
+  --font-body:'Inter',sans-serif;--font-mono:'JetBrains Mono',monospace;
+  --text-xs:clamp(.75rem,.7rem + .25vw,.875rem);
+  --text-sm:clamp(.875rem,.8rem + .35vw,1rem);
+  --text-base:clamp(1rem,.95rem + .25vw,1.125rem);
+  --text-lg:clamp(1.125rem,1rem + .75vw,1.5rem);
+  --text-xl:clamp(1.5rem,1.2rem + 1.25vw,2.25rem);
+  --space-1:.25rem;--space-2:.5rem;--space-3:.75rem;--space-4:1rem;
+  --space-5:1.25rem;--space-6:1.5rem;--space-8:2rem;--space-10:2.5rem;--space-12:3rem;
+}
+[data-theme="dark"]{
+  --color-bg:#171614;--color-surface:#1c1b19;--color-surface-2:#201f1d;
+  --color-surface-offset:#1d1c1a;--color-surface-dynamic:#2d2c2a;
+  --color-border:#393836;--color-divider:#262523;
+  --color-text:#cdccca;--color-text-muted:#797876;--color-text-faint:#5a5957;
+  --color-primary:#4f98a3;--color-primary-hover:#227f8b;--color-primary-active:#1a626b;
+  --color-primary-highlight:#313b3b;
+  --color-success:#6daa45;--color-success-hl:color-mix(in oklch,#6daa45 16%,transparent);
+  --color-error:#d163a7;
+  --color-warning:#bb653b;--color-warning-hl:color-mix(in oklch,#bb653b 14%,transparent);
+  --shadow-sm:0 1px 2px oklch(0 0 0/.2);--shadow-md:0 4px 12px oklch(0 0 0/.3);
+  --shadow-lg:0 12px 32px oklch(0 0 0/.4);
+}
+@media(prefers-color-scheme:dark){:root:not([data-theme]){
+  --color-bg:#171614;--color-surface:#1c1b19;--color-surface-2:#201f1d;
+  --color-surface-offset:#1d1c1a;--color-surface-dynamic:#2d2c2a;
+  --color-border:#393836;--color-divider:#262523;
+  --color-text:#cdccca;--color-text-muted:#797876;--color-text-faint:#5a5957;
+  --color-primary:#4f98a3;--color-primary-hover:#227f8b;--color-primary-active:#1a626b;
+  --color-primary-highlight:#313b3b;
+  --color-success:#6daa45;--color-success-hl:color-mix(in oklch,#6daa45 16%,transparent);
+  --color-error:#d163a7;
+  --color-warning:#bb653b;--color-warning-hl:color-mix(in oklch,#bb653b 14%,transparent);
+  --shadow-sm:0 1px 2px oklch(0 0 0/.2);--shadow-md:0 4px 12px oklch(0 0 0/.3);
+}}
+
+/* ── BASE ────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{-webkit-font-smoothing:antialiased;scroll-behavior:smooth;}
+body{min-height:100dvh;font-family:var(--font-body);font-size:var(--text-base);
+  color:var(--color-text);background:var(--color-bg);line-height:1.6;}
+img,video,svg{display:block;max-width:100%;}
+button{cursor:pointer;background:none;border:none;font:inherit;color:inherit;
+  transition:color var(--transition),background var(--transition),box-shadow var(--transition),opacity var(--transition);}
+input,select{font:inherit;color:inherit;
+  transition:border-color var(--transition),box-shadow var(--transition);}
+:focus-visible{outline:2px solid var(--color-primary);outline-offset:3px;border-radius:var(--radius-sm);}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{
+  animation-duration:.01ms!important;transition-duration:.01ms!important;}}
+
+/* ── LAYOUT ──────────────────────────────────────── */
+.app{max-width:900px;margin-inline:auto;padding:var(--space-6) var(--space-4) var(--space-12);
+  display:flex;flex-direction:column;gap:var(--space-5);}
+
+/* ── HEADER ──────────────────────────────────────── */
+header{display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);}
+.logo{display:flex;align-items:center;gap:var(--space-3);}
+.logo-icon{color:var(--color-primary);flex-shrink:0;}
+.logo-text{font-size:var(--text-lg);font-weight:700;letter-spacing:-.025em;line-height:1.1;}
+.logo-sub{font-size:var(--text-xs);color:var(--color-text-muted);margin-top:2px;}
+.header-actions{display:flex;align-items:center;gap:var(--space-2);}
+.icon-btn{width:36px;height:36px;display:flex;align-items:center;justify-content:center;
+  border-radius:var(--radius-md);color:var(--color-text-muted);}
+.icon-btn:hover{background:var(--color-surface-2);color:var(--color-text);}
+
+/* ── URL INPUT ───────────────────────────────────── */
+.url-card{background:var(--color-surface);border:1px solid var(--color-border);
+  border-radius:var(--radius-xl);padding:var(--space-4) var(--space-5);
+  display:flex;flex-direction:column;gap:var(--space-3);box-shadow:var(--shadow-sm);}
+.url-label{font-size:var(--text-xs);font-weight:600;color:var(--color-text-muted);
+  text-transform:uppercase;letter-spacing:.06em;}
+.url-row{display:flex;gap:var(--space-3);}
+.url-input{flex:1;padding:var(--space-3) var(--space-4);background:var(--color-surface-2);
+  border:1px solid var(--color-border);border-radius:var(--radius-lg);
+  font-size:max(var(--text-sm), 16px);outline:none;}
+.url-input:focus{border-color:var(--color-primary);
+  box-shadow:0 0 0 3px color-mix(in oklch,var(--color-primary) 18%,transparent);}
+.url-input::placeholder{color:var(--color-text-faint);}
+.btn-load{padding:var(--space-3) var(--space-6);background:var(--color-primary);color:#fff;
+  border-radius:var(--radius-lg);font-size:var(--text-sm);font-weight:600;white-space:nowrap;
+  box-shadow:var(--shadow-sm);}
+.btn-load:hover{background:var(--color-primary-hover);}
+.btn-load:active{background:var(--color-primary-active);}
+.btn-load:disabled{opacity:.5;cursor:not-allowed;}
+
+/* ── VIDEO ───────────────────────────────────────── */
+.video-wrap{position:relative;width:100%;aspect-ratio:16/9;border-radius:var(--radius-xl);
+  overflow:hidden;background:var(--color-surface);box-shadow:var(--shadow-lg);}
+.video-wrap iframe{position:absolute;inset:0;width:100%;height:100%;border:none;}
+.video-placeholder{position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:var(--space-4);
+  color:var(--color-text-faint);background:var(--color-surface);}
+.video-placeholder svg{opacity:.3;}
+.video-placeholder p{font-size:var(--text-sm);color:var(--color-text-muted);}
+
+/* ── CONTROLS ────────────────────────────────────── */
+.controls-card{background:var(--color-surface);border:1px solid var(--color-border);
+  border-radius:var(--radius-xl);padding:var(--space-5);
+  display:flex;flex-direction:column;gap:var(--space-4);box-shadow:var(--shadow-sm);}
+
+/* Progress */
+.progress-wrap{display:flex;align-items:center;gap:var(--space-3);}
+.progress-time{font-family:var(--font-mono);font-size:var(--text-xs);
+  color:var(--color-text-muted);white-space:nowrap;min-width:38px;}
+.progress-track{flex:1;height:5px;background:var(--color-surface-dynamic);
+  border-radius:var(--radius-full);overflow:hidden;cursor:pointer;position:relative;}
+.progress-track:hover{height:7px;margin-block:-1px;}
+.progress-fill{height:100%;background:var(--color-primary);
+  border-radius:var(--radius-full);transition:width .15s linear;}
+
+/* Chunk nav */
+.chunk-nav{display:flex;align-items:center;justify-content:center;gap:var(--space-3);}
+.nav-btn{width:44px;height:44px;display:flex;align-items:center;justify-content:center;
+  border-radius:var(--radius-md);background:var(--color-surface-2);
+  border:1px solid var(--color-border);color:var(--color-text-muted);}
+.nav-btn:hover:not(:disabled){background:var(--color-surface-offset);color:var(--color-text);
+  box-shadow:var(--shadow-sm);}
+.nav-btn:disabled{opacity:.3;cursor:not-allowed;}
+.nav-btn.replay-btn{width:58px;height:58px;border-radius:var(--radius-lg);
+  background:var(--color-primary);color:#fff;border:none;font-size:1.6rem;line-height:1;}
+.nav-btn.replay-btn:hover{background:var(--color-primary-hover);}
+.nav-btn.replay-btn:active{background:var(--color-primary-active);transform:scale(.96);}
+.chunk-label{font-family:var(--font-mono);font-size:var(--text-xs);
+  color:var(--color-text-muted);text-align:center;min-width:100px;line-height:1.4;}
+.chunk-label strong{display:block;font-size:var(--text-sm);color:var(--color-text);font-family:var(--font-body);}
+
+.divider{height:1px;background:var(--color-divider);}
+
+/* Settings */
+.settings-row{display:flex;flex-wrap:wrap;gap:var(--space-4);align-items:center;}
+.setting-group{display:flex;align-items:center;gap:var(--space-2);}
+.setting-label{font-size:var(--text-xs);color:var(--color-text-muted);white-space:nowrap;}
+.setting-field{padding:var(--space-1) var(--space-3);background:var(--color-surface-2);
+  border:1px solid var(--color-border);border-radius:var(--radius-md);
+  font-size:max(var(--text-xs), 16px);font-family:var(--font-mono);
+  outline:none;min-width:64px;}
+.setting-field:focus{border-color:var(--color-primary);}
+select.setting-field{min-width:72px;}
+
+/* Toggle */
+.toggle-group{display:flex;align-items:center;gap:var(--space-2);cursor:pointer;
+  user-select:none;}
+.toggle{width:36px;height:20px;background:var(--color-surface-dynamic);
+  border-radius:var(--radius-full);position:relative;flex-shrink:0;
+  transition:background var(--transition);}
+.toggle.on{background:var(--color-primary);}
+.toggle::after{content:'';position:absolute;top:3px;left:3px;width:14px;height:14px;
+  background:#fff;border-radius:50%;transition:transform var(--transition);
+  box-shadow:0 1px 3px oklch(0 0 0/.25);}
+.toggle.on::after{transform:translateX(16px);}
+
+/* Keyboard hints */
+.kb-row{display:flex;gap:var(--space-4);flex-wrap:wrap;}
+.kb-hint{display:flex;align-items:center;gap:var(--space-1);
+  font-size:var(--text-xs);color:var(--color-text-faint);}
+.kbd{display:inline-flex;align-items:center;justify-content:center;
+  padding:1px 7px;background:var(--color-surface-2);
+  border:1px solid var(--color-border);border-bottom-width:2px;
+  border-radius:var(--radius-sm);font-family:var(--font-mono);
+  font-size:.68rem;line-height:1.7;color:var(--color-text-muted);}
+
+/* ── SRT ROW ─────────────────────────────────────── */
+.srt-row{display:flex;align-items:center;gap:var(--space-2);
+  margin-top:var(--space-2);padding:var(--space-2) var(--space-3);
+  background:var(--color-surface-2);border:1px solid var(--color-border);
+  border-radius:var(--radius-md);font-size:var(--text-xs);color:var(--color-text-muted);}
+.srt-row svg{flex-shrink:0;color:var(--color-text-faint);}
+.srt-status{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.srt-status.loaded{color:var(--color-success);}
+.srt-pick{padding:2px 10px;background:var(--color-surface-dynamic);border-radius:var(--radius-sm);
+  cursor:pointer;white-space:nowrap;font-size:var(--text-xs);font-weight:500;
+  border:1px solid var(--color-border);transition:background var(--transition);}
+.srt-pick:hover{background:var(--color-border);}
+.srt-clear{width:20px;height:20px;display:flex;align-items:center;justify-content:center;
+  border-radius:var(--radius-sm);font-size:.7rem;color:var(--color-text-faint);}
+.srt-clear:hover{background:var(--color-surface-dynamic);color:var(--color-text);}
+
+/* ── SUBTITLE OVERLAY ────────────────────────────── */
+#subOverlay{position:absolute;bottom:52px;left:50%;transform:translateX(-50%);
+  max-width:90%;text-align:center;pointer-events:none;z-index:10;}
+#subOverlay span{display:inline-block;padding:4px 12px;
+  background:rgba(0,0,0,.72);color:#fff;
+  font-size:clamp(.85rem,1.8vw,1.1rem);font-weight:500;line-height:1.45;
+  border-radius:4px;text-shadow:0 1px 3px rgba(0,0,0,.5);
+  backdrop-filter:blur(2px);}
+
+/* ── SOURCE TABS ─────────────────────────────────── */
+.source-tabs{display:flex;gap:var(--space-1);border-bottom:1px solid var(--color-divider);
+  margin-bottom:var(--space-3);}
+.source-tab{display:flex;align-items:center;gap:var(--space-2);padding:var(--space-2) var(--space-4);
+  border-radius:var(--radius-md) var(--radius-md) 0 0;
+  font-size:var(--text-sm);font-weight:500;color:var(--color-text-muted);
+  border:1px solid transparent;border-bottom:none;margin-bottom:-1px;}
+.source-tab:hover{color:var(--color-text);background:var(--color-surface-2);}
+.source-tab.active{color:var(--color-primary);background:var(--color-surface);
+  border-color:var(--color-border);border-bottom-color:var(--color-surface);}
+
+/* ── FILE DROP ZONE ──────────────────────────────── */
+.file-drop-zone{display:flex;align-items:center;gap:var(--space-3);
+  padding:var(--space-3) var(--space-4);
+  border:1.5px dashed var(--color-border);border-radius:var(--radius-lg);
+  transition:border-color var(--transition),background var(--transition);}
+.file-drop-zone.dragover{border-color:var(--color-primary);
+  background:color-mix(in oklch,var(--color-primary) 6%,transparent);}
+.drop-label{font-size:var(--text-sm);color:var(--color-text-muted);flex:1;}
+.drop-hint{font-size:var(--text-xs);color:var(--color-text-faint);}
+.btn-file-pick{padding:var(--space-2) var(--space-4);background:var(--color-primary);color:#fff;
+  border-radius:var(--radius-md);font-size:var(--text-sm);font-weight:600;cursor:pointer;white-space:nowrap;
+  transition:background var(--transition);}
+.btn-file-pick:hover{background:var(--color-primary-hover);}
+
+/* ── NOTICE ──────────────────────────────────────── */
+.notice{background:color-mix(in oklch,var(--color-primary) 8%,var(--color-surface));
+  border:1px solid color-mix(in oklch,var(--color-primary) 22%,var(--color-border));
+  border-radius:var(--radius-lg);padding:var(--space-3) var(--space-4);
+  font-size:var(--text-xs);color:var(--color-text-muted);
+  display:flex;gap:var(--space-2);align-items:flex-start;line-height:1.5;}
+.notice svg{flex-shrink:0;margin-top:1px;color:var(--color-primary);}
+.notice strong{color:var(--color-primary);}
+
+/* ── RESPONSIVE ──────────────────────────────────── */
+@media(max-width:580px){
+  /* Layout */
+  .app{padding:var(--space-4) var(--space-3) var(--space-10);gap:var(--space-4);}
+
+  /* Header */
+  .logo-sub{display:none;}
+  .logo-text{font-size:1.1rem;}
+  .logo-icon{width:28px;height:28px;}
+
+  /* Source tabs — full width */
+  .source-tab{flex:1;justify-content:center;padding:var(--space-2) var(--space-2);font-size:.8rem;}
+
+  /* URL input */
+  .url-row{flex-direction:column;}
+  .btn-load{width:100%;padding:var(--space-3);font-size:var(--text-base);}
+  .url-input{font-size:1rem;} /* prevents iOS zoom */
+
+  /* Drop zone — stack on mobile */
+  .file-drop-zone{flex-wrap:wrap;gap:var(--space-2);}
+  .drop-label{width:100%;text-align:center;}
+  .drop-hint{display:none;}
+  .btn-file-pick{flex:1;text-align:center;padding:var(--space-2) var(--space-3);}
+
+  /* SRT row */
+  .srt-status{font-size:.7rem;}
+
+  /* Controls card */
+  .controls-card{padding:var(--space-4) var(--space-3);}
+
+  /* Progress bar — taller touch target */
+  .progress-track{height:8px;}
+  .progress-track:hover{height:8px;margin-block:0;}
+  .progress-time{font-size:.7rem;min-width:32px;}
+
+  /* Chunk nav — bigger buttons */
+  .chunk-nav{gap:var(--space-4);}
+  .nav-btn{width:52px;height:52px;}
+  .nav-btn.replay-btn{width:68px;height:68px;font-size:2rem;}
+  .nav-btn svg{width:24px;height:24px;}
+  .chunk-label{min-width:90px;}
+  .chunk-label strong{font-size:var(--text-base);}
+
+  /* Settings — 2-col grid */
+  .settings-row{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-3);}
+  .toggle-group{grid-column:1/-1;justify-content:center;}
+  .setting-group{justify-content:space-between;}
+  .setting-field{min-width:0;width:100%;max-width:90px;}
+  select.setting-field{max-width:100px;}
+
+  /* Hide keyboard hints on touch devices */
+  .kb-row{display:none;}
+
+  /* Notice */
+  .notice{font-size:.72rem;}
+}
+
+/* Touch-specific: bigger tap targets */
+@media(hover:none) and (pointer:coarse){
+  .nav-btn{min-width:48px;min-height:48px;}
+  .nav-btn.replay-btn{min-width:64px;min-height:64px;}
+  .progress-track{height:10px;cursor:default;}
+  .progress-track:hover{height:10px;margin-block:0;}
+  .icon-btn{width:44px;height:44px;}
+  .srt-pick{padding:6px 14px;}
+  .srt-clear{width:28px;height:28px;}
+  .source-tab{padding:var(--space-3) var(--space-2);}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ── HEADER ── -->
+  <header>
+    <div class="logo">
+      <svg class="logo-icon" width="34" height="34" viewBox="0 0 34 34" fill="none" aria-hidden="true">
+        <rect width="34" height="34" rx="9" fill="currentColor" opacity=".15"/>
+        <path d="M13 11v12l10-6-10-6z" fill="currentColor"/>
+        <rect x="7" y="27" width="20" height="2.5" rx="1.25" fill="currentColor" opacity=".4"/>
+      </svg>
+      <div>
+        <div class="logo-text">Shadow Player</div>
+        <div class="logo-sub">Language shadowing · YouTube &amp; local files</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn" id="themeBtn" aria-label="Toggle light/dark mode"></button>
+    </div>
+  </header>
+
+  <!-- ── SOURCE INPUT ── -->
+  <div class="url-card">
+    <!-- Tab switcher -->
+    <div class="source-tabs" role="tablist" aria-label="Video source">
+      <button class="source-tab active" id="tabYT" role="tab" aria-selected="true" aria-controls="panelYT">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23.5 6.19a3.02 3.02 0 0 0-2.12-2.14C19.54 3.5 12 3.5 12 3.5s-7.54 0-9.38.55A3.02 3.02 0 0 0 .5 6.19C0 8.04 0 12 0 12s0 3.96.5 5.81a3.02 3.02 0 0 0 2.12 2.14C4.46 20.5 12 20.5 12 20.5s7.54 0 9.38-.55a3.02 3.02 0 0 0 2.12-2.14C24 15.96 24 12 24 12s0-3.96-.5-5.81zM9.75 15.5v-7l6.5 3.5-6.5 3.5z"/></svg>
+        YouTube
+      </button>
+      <button class="source-tab" id="tabLocal" role="tab" aria-selected="false" aria-controls="panelLocal">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+        Local file
+      </button>
+    </div>
+
+    <!-- YouTube panel -->
+    <div id="panelYT" role="tabpanel" aria-labelledby="tabYT">
+      <div class="url-row">
+        <input id="urlInput" class="url-input" type="url"
+          placeholder="https://youtu.be/… or https://www.youtube.com/watch?v=…"
+          autocomplete="off" spellcheck="false" aria-label="YouTube video URL"/>
+        <button class="btn-load" id="loadBtn" aria-label="Load YouTube video">Load</button>
+      </div>
+    </div>
+
+    <!-- Local file panel -->
+    <div id="panelLocal" role="tabpanel" aria-labelledby="tabLocal" style="display:none;">
+      <div class="file-drop-zone" id="dropZone">
+        <span class="drop-label">Drop a video or audio file here</span>
+        <span class="drop-hint">MP4 · MKV · MOV · WebM · MP3 · M4A</span>
+        <label class="btn-file-pick" for="fileInput">Browse</label>
+        <input id="fileInput" type="file" accept="video/*,audio/*" style="display:none;" aria-label="Choose local video file"/>
+      </div>
+      <div class="srt-row" id="srtRow" style="display:none;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span class="srt-status" id="srtStatus">No subtitle file loaded</span>
+        <label class="srt-pick" for="srtInput">Load .srt</label>
+        <input id="srtInput" type="file" accept=".srt,.vtt" style="display:none;" aria-label="Choose SRT subtitle file"/>
+        <button class="srt-clear" id="srtClear" style="display:none;" title="Remove subtitles">✕</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── VIDEO ── -->
+  <div class="video-wrap" id="videoWrap">
+    <div class="video-placeholder" id="placeholder">
+      <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+        <rect x="2" y="5" width="20" height="14" rx="2.5"/>
+        <polygon points="10,9 16,12 10,15" fill="currentColor" stroke="none"/>
+      </svg>
+      <p>Paste a YouTube URL or drop a local video file</p>
+    </div>
+    <div id="yt-player" style="display:none;position:absolute;inset:0;width:100%;height:100%;"></div>
+    <video id="localVideo" style="display:none;position:absolute;inset:0;width:100%;height:100%;background:#000;" controls></video>
+    <!-- Subtitle overlay -->
+    <div id="subOverlay" style="display:none;">
+      <span id="subText"></span>
+    </div>
+  </div>
+
+  <!-- ── CONTROLS ── -->
+  <div class="controls-card" id="controlsCard" style="display:none;">
+
+    <!-- Progress bar -->
+    <div class="progress-wrap">
+      <span class="progress-time" id="timeCurrent">0:00</span>
+      <div class="progress-track" id="progressTrack" role="slider" aria-label="Video progress" tabindex="0">
+        <div class="progress-fill" id="progressFill" style="width:0%"></div>
+      </div>
+      <span class="progress-time" id="timeDuration">0:00</span>
+    </div>
+
+    <!-- Chunk navigation -->
+    <div class="chunk-nav">
+      <button class="nav-btn" id="prevBtn" title="Previous chunk (←)" disabled aria-label="Previous chunk">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <button class="nav-btn replay-btn" id="replayBtn" title="Replay this chunk (Space)" aria-label="Replay chunk">↺</button>
+      <button class="nav-btn" id="nextBtn" title="Next chunk (→)" disabled aria-label="Next chunk">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+      <div class="chunk-label" id="chunkLabel">
+        <strong>—</strong>
+        <span id="chunkCounter">Load a video to start</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Settings -->
+    <div class="settings-row">
+      <div class="setting-group">
+        <label class="setting-label" for="chunkSizeInput">Chunk size</label>
+        <input class="setting-field" id="chunkSizeInput" type="number" min="3" max="120" value="10" step="1" aria-label="Chunk size in seconds"/>
+        <span class="setting-label">sec</span>
+      </div>
+      <div class="setting-group">
+        <label class="setting-label" for="speedSelect">Speed</label>
+        <select class="setting-field" id="speedSelect" aria-label="Playback speed">
+          <option value="0.5">0.5×</option>
+          <option value="0.75">0.75×</option>
+          <option value="1" selected>1×</option>
+          <option value="1.25">1.25×</option>
+          <option value="1.5">1.5×</option>
+          <option value="2">2×</option>
+        </select>
+      </div>
+      <div class="toggle-group" id="autoToggleGroup" role="switch" aria-checked="false" tabindex="0" title="Auto-advance to next chunk after each ends">
+        <div class="toggle" id="autoToggle"></div>
+        <span class="setting-label">Auto-advance</span>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- Keyboard hints -->
+    <div class="kb-row">
+      <div class="kb-hint"><kbd class="kbd">Space</kbd> Replay</div>
+      <div class="kb-hint"><kbd class="kbd">←</kbd> Prev chunk</div>
+      <div class="kb-hint"><kbd class="kbd">→</kbd> Next chunk</div>
+      <div class="kb-hint"><kbd class="kbd">R</kbd> Change speed</div>
+    </div>
+  </div>
+
+  <!-- ── INFO NOTICE ── -->
+  <div class="notice">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+      <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+    <span><strong>Tip:</strong> Paste any YouTube URL and press Load, or switch to the <em>Local file</em> tab to open a video or audio file from your device. All chunk and replay controls work the same way for both sources.</span>
+  </div>
+
+</div><!-- /app -->
+
+<script>
+// ═══════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════
+let player      = null;   // YT player instance
+let ready       = false;
+let videoId     = null;   // YT video id
+let mode        = 'yt';   // 'yt' | 'local'
+let duration    = 0;
+let chunk       = 0;
+let chunkSize   = 10;
+let speed       = 1;
+let autoAdvance = false;
+let timerRef    = null;
+let localURL    = null;   // object URL for local file
+let srtCues     = [];     // [{start, end, text}] parsed from SRT
+const SPEEDS    = [0.5, 0.75, 1, 1.25, 1.5, 2];
+
+// ═══════════════════════════════════════════════════
+//  DOM REFS
+// ═══════════════════════════════════════════════════
+const $  = id => document.getElementById(id);
+const urlInput      = $('urlInput');
+const loadBtn       = $('loadBtn');
+const placeholder   = $('placeholder');
+const ytEl          = $('yt-player');
+const localVideo    = $('localVideo');
+const controlsCard  = $('controlsCard');
+const prevBtn       = $('prevBtn');
+const nextBtn       = $('nextBtn');
+const replayBtn     = $('replayBtn');
+const chunkLabel    = $('chunkLabel').querySelector('strong');
+const chunkCounter  = $('chunkCounter');
+const progressFill  = $('progressFill');
+const progressTrack = $('progressTrack');
+const timeCurrent   = $('timeCurrent');
+const timeDuration  = $('timeDuration');
+const chunkSizeInput= $('chunkSizeInput');
+const speedSelect   = $('speedSelect');
+const autoToggle    = $('autoToggle');
+const autoToggleGroup=$('autoToggleGroup');
+const subOverlay    = $('subOverlay');
+const subText       = $('subText');
+const srtRow        = $('srtRow');
+const srtStatus     = $('srtStatus');
+const srtClear      = $('srtClear');
+const srtInput      = $('srtInput');
+
+// ═══════════════════════════════════════════════════
+//  THEME TOGGLE
+// ═══════════════════════════════════════════════════
+(function(){
+  const btn = $('themeBtn');
+  const html = document.documentElement;
+  let m = html.getAttribute('data-theme') ||
+    (matchMedia('(prefers-color-scheme:dark)').matches ? 'dark' : 'light');
+  html.setAttribute('data-theme', m);
+  function update() {
+    btn.innerHTML = m === 'dark'
+      ? `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`
+      : `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>`;
+    btn.setAttribute('aria-label', `Switch to ${m === 'dark' ? 'light' : 'dark'} mode`);
+  }
+  update();
+  btn.addEventListener('click', () => {
+    m = m === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-theme', m);
+    update();
+  });
+})();
+
+// ═══════════════════════════════════════════════════
+//  SOURCE TABS
+// ═══════════════════════════════════════════════════
+$('tabYT').addEventListener('click', () => switchTab('yt'));
+$('tabLocal').addEventListener('click', () => switchTab('local'));
+
+function switchTab(t) {
+  $('tabYT').classList.toggle('active', t === 'yt');
+  $('tabLocal').classList.toggle('active', t === 'local');
+  $('tabYT').setAttribute('aria-selected', String(t === 'yt'));
+  $('tabLocal').setAttribute('aria-selected', String(t === 'local'));
+  $('panelYT').style.display    = t === 'yt'    ? '' : 'none';
+  $('panelLocal').style.display = t === 'local' ? '' : 'none';
+}
+
+// ═══════════════════════════════════════════════════
+//  UTILITIES
+// ═══════════════════════════════════════════════════
+function parseVideoId(url) {
+  const m = url.match(/(?:v=|youtu\.be\/|\/shorts\/)([A-Za-z0-9_-]{11})/);
+  return m ? m[1] : null;
+}
+function fmt(sec) {
+  sec = Math.max(0, Math.floor(sec));
+  const m = Math.floor(sec / 60);
+  const s = String(sec % 60).padStart(2, '0');
+  return `${m}:${s}`;
+}
+function totalChunks() {
+  return duration ? Math.ceil(duration / chunkSize) : 0;
+}
+
+// ═══════════════════════════════════════════════════
+//  LOAD — YOUTUBE
+// ═══════════════════════════════════════════════════
+loadBtn.addEventListener('click', loadYouTube);
+urlInput.addEventListener('keydown', e => { if (e.key === 'Enter') loadYouTube(); });
+
+function loadYouTube() {
+  const id = parseVideoId(urlInput.value.trim());
+  if (!id) {
+    urlInput.focus();
+    urlInput.style.borderColor = 'var(--color-error)';
+    setTimeout(() => urlInput.style.borderColor = '', 1500);
+    return;
+  }
+  // Reset local
+  if (localURL) { URL.revokeObjectURL(localURL); localURL = null; }
+  localVideo.style.display = 'none';
+  localVideo.src = '';
+  srtRow.style.display = 'none';
+  subOverlay.style.display = 'none';
+
+  videoId = id;
+  mode = 'yt';
+  chunk = 0;
+  ready = false;
+  clearInterval(timerRef);
+  duration = 0;
+
+  placeholder.style.display = 'none';
+  ytEl.style.display = 'block';
+  controlsCard.style.display = 'flex';
+  initPlayer(id);
+}
+
+// ═══════════════════════════════════════════════════
+//  LOAD — LOCAL FILE
+// ═══════════════════════════════════════════════════
+const fileInput = $('fileInput');
+const dropZone  = $('dropZone');
+
+// Click on drop zone also opens picker (unless clicking the label itself)
+dropZone.addEventListener('click', e => {
+  if (e.target.tagName !== 'LABEL' && e.target.tagName !== 'INPUT') fileInput.click();
+});
+
+fileInput.addEventListener('change', () => {
+  if (fileInput.files[0]) loadLocalFile(fileInput.files[0]);
+});
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file && (file.type.startsWith('video/') || file.type.startsWith('audio/'))) loadLocalFile(file);
+});
+
+function loadLocalFile(file) {
+  // Tear down YT player
+  if (player) { try { player.destroy(); } catch {} player = null; }
+  ytEl.style.display = 'none';
+  videoId = null;
+
+  // Revoke old URL
+  if (localURL) URL.revokeObjectURL(localURL);
+  localURL = URL.createObjectURL(file);
+
+  mode = 'local';
+  chunk = 0;
+  ready = false;
+  duration = 0;
+  clearInterval(timerRef);
+
+  localVideo.src = localURL;
+  localVideo.style.display = 'block';
+  localVideo.playbackRate = speed;
+  placeholder.style.display = 'none';
+  controlsCard.style.display = 'flex';
+  srtRow.style.display = 'flex';
+  // Clear any previously loaded SRT
+  srtCues = [];
+  srtStatus.textContent = 'No subtitle file loaded';
+  srtStatus.classList.remove('loaded');
+  srtClear.style.display = 'none';
+  subOverlay.style.display = 'none';
+
+  localVideo.load();
+}
+
+// Local video events
+localVideo.addEventListener('loadedmetadata', () => {
+  duration = localVideo.duration;
+  timeDuration.textContent = fmt(duration);
+  ready = true;
+  updateChunkUI();
+  localVideo.currentTime = 0;
+  localVideo.play().catch(() => {});
+});
+
+localVideo.addEventListener('play',  () => { if (mode === 'local') startChunkTimer(); });
+localVideo.addEventListener('pause', () => { if (mode === 'local') clearInterval(timerRef); });
+localVideo.addEventListener('seeked', () => { if (mode === 'local' && !localVideo.paused) startChunkTimer(); });
+
+// ═══════════════════════════════════════════════════
+//  SRT — LOAD & PARSE
+// ═══════════════════════════════════════════════════
+srtInput.addEventListener('change', () => { if (srtInput.files[0]) loadSRT(srtInput.files[0]); });
+
+srtClear.addEventListener('click', () => {
+  srtCues = [];
+  srtStatus.textContent = 'No subtitle file loaded';
+  srtStatus.classList.remove('loaded');
+  srtClear.style.display = 'none';
+  subOverlay.style.display = 'none';
+  subText.textContent = '';
+});
+
+function loadSRT(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    srtCues = parseSRT(e.target.result);
+    if (srtCues.length) {
+      srtStatus.textContent = `${file.name} — ${srtCues.length} cues`;
+      srtStatus.classList.add('loaded');
+      srtClear.style.display = '';
+    } else {
+      srtStatus.textContent = 'Could not parse subtitle file';
+      srtStatus.classList.remove('loaded');
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function parseSRT(text) {
+  // Normalise line endings, strip BOM
+  text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/^\uFEFF/, '');
+  const blocks = text.trim().split(/\n\s*\n/);
+  const cues = [];
+  const timeRe = /(\d{1,2}:\d{2}:\d{2}[,.]\d{1,3})\s*-->\s*(\d{1,2}:\d{2}:\d{2}[,.]\d{1,3})/;
+  for (const block of blocks) {
+    const lines = block.trim().split('\n');
+    let timeIdx = lines.findIndex(l => timeRe.test(l));
+    if (timeIdx < 0) continue;
+    const m = lines[timeIdx].match(timeRe);
+    const start = parseSRTTime(m[1]);
+    const end   = parseSRTTime(m[2]);
+    const txt   = lines.slice(timeIdx + 1).join('\n')
+      .replace(/<[^>]+>/g, '')   // strip HTML tags
+      .replace(/\{[^}]+\}/g, '') // strip ASS tags
+      .trim();
+    if (txt) cues.push({ start, end, text: txt });
+  }
+  return cues;
+}
+
+function parseSRTTime(s) {
+  // hh:mm:ss,mmm or hh:mm:ss.mmm
+  const [hms, ms] = s.replace(',', '.').split('.');
+  const parts = hms.split(':').map(Number);
+  return parts[0] * 3600 + parts[1] * 60 + parts[2] + (parseFloat('0.' + ms) || 0);
+}
+
+function updateSubtitle(t) {
+  if (!srtCues.length) { subOverlay.style.display = 'none'; return; }
+  const cue = srtCues.find(c => t >= c.start && t < c.end);
+  if (cue) {
+    subText.textContent = cue.text;
+    subOverlay.style.display = '';
+  } else {
+    subOverlay.style.display = 'none';
+  }
+}
+
+// ═══════════════════════════════════════════════════
+//  YOUTUBE PLAYER
+// ═══════════════════════════════════════════════════
+(function loadYTAPI() {
+  if (window.YT) return;
+  const s = document.createElement('script');
+  s.src = 'https://www.youtube.com/iframe_api';
+  document.head.appendChild(s);
+})();
+
+function initPlayer(vid) {
+  if (player) { try { player.destroy(); } catch {} player = null; }
+  player = new window.YT.Player('yt-player', {
+    videoId: vid,
+    playerVars: { autoplay: 1, rel: 0, modestbranding: 1, start: 0, cc_load_policy: 0 },
+    events: {
+      onReady(e) {
+        ready = true;
+        const d = e.target.getDuration();
+        if (d) { duration = d; timeDuration.textContent = fmt(d); }
+        e.target.setPlaybackRate(speed);
+        updateChunkUI();
+      },
+      onStateChange(e) {
+        const S = window.YT.PlayerState;
+        if (e.data === S.PLAYING) startChunkTimer();
+        else clearInterval(timerRef);
+      }
+    }
+  });
+}
+
+window.onYouTubeIframeAPIReady = function() {};
+
+// ═══════════════════════════════════════════════════
+//  UNIFIED PLAYER HELPERS
+// ═══════════════════════════════════════════════════
+function getCurrentTime() {
+  if (mode === 'local') return localVideo.currentTime;
+  return player && player.getCurrentTime ? player.getCurrentTime() : 0;
+}
+function getDuration() {
+  if (mode === 'local') return localVideo.duration || duration;
+  return player && player.getDuration ? player.getDuration() : duration;
+}
+function seekTo(t) {
+  if (mode === 'local') { localVideo.currentTime = t; }
+  else if (player && player.seekTo) player.seekTo(t, true);
+}
+function playMedia() {
+  if (mode === 'local') localVideo.play().catch(() => {});
+  else if (player && player.playVideo) player.playVideo();
+}
+function pauseMedia() {
+  if (mode === 'local') localVideo.pause();
+  else if (player && player.pauseVideo) player.pauseVideo();
+}
+
+// ═══════════════════════════════════════════════════
+//  CHUNK TIMER
+// ═══════════════════════════════════════════════════
+function startChunkTimer() {
+  clearInterval(timerRef);
+  timerRef = setInterval(() => {
+    if (!ready) return;
+    const t   = getCurrentTime();
+    const end = (chunk + 1) * chunkSize;
+
+    timeCurrent.textContent = fmt(t);
+    const dur = getDuration();
+    if (dur > 0) progressFill.style.width = (t / dur * 100) + '%';
+    updateSubtitle(t);
+
+    if (t >= end) {
+      clearInterval(timerRef);
+      const totalC = Math.ceil(getDuration() / chunkSize);
+      if (autoAdvance) {
+        const next = chunk + 1;
+        if (next < totalC) { chunk = next; seekTo(next * chunkSize); playMedia(); updateChunkUI(); }
+        else pauseMedia();
+      } else {
+        pauseMedia();
+      }
+    }
+  }, 150);
+}
+
+// ═══════════════════════════════════════════════════
+//  NAVIGATION
+// ═══════════════════════════════════════════════════
+function goToChunk(idx) {
+  if (!ready) return;
+  chunk = Math.max(0, Math.min(idx, totalChunks() - 1));
+  seekTo(chunk * chunkSize);
+  playMedia();
+  updateChunkUI();
+}
+
+replayBtn.addEventListener('click', () => goToChunk(chunk));
+prevBtn.addEventListener('click',   () => goToChunk(chunk - 1));
+nextBtn.addEventListener('click',   () => goToChunk(chunk + 1));
+
+function updateChunkUI() {
+  const total = totalChunks();
+  const start = chunk * chunkSize;
+  const end   = Math.min((chunk + 1) * chunkSize, duration);
+  chunkLabel.textContent  = total > 0 ? `${fmt(start)} – ${fmt(end)}` : '—';
+  chunkCounter.textContent= total > 0 ? `Chunk ${chunk + 1} of ${total}` : 'Load a video to start';
+  prevBtn.disabled = chunk <= 0;
+  nextBtn.disabled = total === 0 || chunk >= total - 1;
+}
+
+// ═══════════════════════════════════════════════════
+//  SETTINGS
+// ═══════════════════════════════════════════════════
+chunkSizeInput.addEventListener('change', () => {
+  const v = Math.max(3, Math.min(120, parseInt(chunkSizeInput.value) || 10));
+  chunkSize = v;
+  chunkSizeInput.value = v;
+  chunk = 0;
+  updateChunkUI();
+});
+
+speedSelect.addEventListener('change', () => {
+  speed = parseFloat(speedSelect.value);
+  if (mode === 'local') localVideo.playbackRate = speed;
+  else if (player && player.setPlaybackRate) player.setPlaybackRate(speed);
+});
+
+function toggleAuto() {
+  autoAdvance = !autoAdvance;
+  autoToggle.classList.toggle('on', autoAdvance);
+  autoToggleGroup.setAttribute('aria-checked', String(autoAdvance));
+}
+autoToggleGroup.addEventListener('click', toggleAuto);
+autoToggleGroup.addEventListener('keydown', e => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleAuto(); } });
+
+// ═══════════════════════════════════════════════════
+//  PROGRESS BAR SEEK
+// ═══════════════════════════════════════════════════
+function seekFromEvent(clientX) {
+  if (!ready || !duration) return;
+  const rect = progressTrack.getBoundingClientRect();
+  const pct  = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+  const t    = pct * getDuration();
+  chunk = Math.floor(t / chunkSize);
+  seekTo(t);
+  playMedia();
+  updateChunkUI();
+}
+function seekFromClick(e) { seekFromEvent(e.clientX); }
+progressTrack.addEventListener('click', seekFromClick);
+progressTrack.addEventListener('touchstart', e => {
+  e.preventDefault();
+  seekFromEvent(e.touches[0].clientX);
+}, { passive: false });
+progressTrack.addEventListener('touchmove', e => {
+  e.preventDefault();
+  seekFromEvent(e.touches[0].clientX);
+}, { passive: false });
+progressTrack.addEventListener('keydown', e => {
+  if (!ready) return;
+  if (e.key === 'ArrowRight') goToChunk(chunk + 1);
+  if (e.key === 'ArrowLeft')  goToChunk(chunk - 1);
+});
+
+// ═══════════════════════════════════════════════════
+//  KEYBOARD SHORTCUTS
+// ═══════════════════════════════════════════════════
+let speedCycle = 0;
+document.addEventListener('keydown', e => {
+  const tag = document.activeElement?.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+  if (!ready) return;
+  switch(e.code) {
+    case 'Space':       e.preventDefault(); goToChunk(chunk); break;
+    case 'ArrowRight':  e.preventDefault(); goToChunk(chunk + 1); break;
+    case 'ArrowLeft':   e.preventDefault(); goToChunk(chunk - 1); break;
+    case 'KeyR':
+      speedCycle = (speedCycle + 1) % SPEEDS.length;
+      speed = SPEEDS[speedCycle];
+      speedSelect.value = speed;
+      if (mode === 'local') localVideo.playbackRate = speed;
+      else if (player && player.setPlaybackRate) player.setPlaybackRate(speed);
+      break;
+  }
+});
+</script>
+</body>
+</html>
